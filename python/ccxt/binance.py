@@ -1437,7 +1437,29 @@ class binance(Exchange):
 
     def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=None, params={}):
         self.load_markets()
-        market = self.market(symbol)
+
+        # binance.options.defaultType == 'delivery' iken;
+        # binance.fetch_ohlcv('BTCUSD_210326', '4h') çağırıldığında, bu method ilk iş "self.load_markets()" çağırıyor, o da "fetch_market" çağırıyor
+        # En nihayetinde bizim istediğimiz request öncesinde "ExchangeInfo" çağırılıyor ve eğer bizim istediğimiz "Symbol" bu listede mevcut değilse
+        # asıl istediğimiz requesti daha atamadan hata alıyoruz (binance does not have market symbol BTCUSD_210326)
+        # Bu aslında Binance'in bir bug'ı. ExchangeInfo endpointi BTCUSD_210326 sembolünü de dönmeli.
+        # Fakat muhtemelen bir bug yüzünden ExchangeInfo servisi "contractStatus":"TRADING" olmayan hiçbir veriyi dönmüyor.
+        # Halbuki BTCUSD_210326 aslında halihazırda "contractStatus":"EXPIRED" olan bir kontrat. Yani bu statü ile de olsa ExchangeInfo servisi bunu dönmeli.
+
+        # Workaround: Eğer sembol isminde ("BTCUSD_210625") '_2' karakteri bulunuyorsa potansiyel olarak ExchangeInfo'dan dönmeyen bir quarterly future arıyoruzdur.
+        # Bu yüzden hata alan "self.market(symbol)" yerine "market" objesinin gerekli yerlerini biz manuel dolduruyoruz.
+
+        ## BEGINNING OF CUSTOM CODE
+        market = {}
+        if "_2" in symbol:
+            defaultType = self.safe_string(self.options, 'defaultType', 'spot')
+            market['id'] = symbol
+            market['future'] = True if defaultType == 'future' else False
+            market['delivery'] = True if defaultType == 'delivery' else False
+        else:
+            market = self.market(symbol)
+        ## END OF CUSTOM CODE
+
         # binance docs say that the default limit 500, max 1500 for futures, max 1000 for spot markets
         # the reality is that the time range wider than 500 candles won't work right
         defaultLimit = 500
