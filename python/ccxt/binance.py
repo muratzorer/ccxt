@@ -1473,10 +1473,11 @@ class binance(Exchange):
         duration = self.parse_timeframe(timeframe)
         if since is not None:
             request['startTime'] = since
-            if since > 0:
-                endTime = self.sum(since, limit * duration * 1000 - 1)
-                now = self.milliseconds()
-                request['endTime'] = min(now, endTime)
+            # Bu 'optional' endtime işleri karıştırmaktan başka bir boka yaramıyor, kapatıyorum.
+            #if since > 0:
+            #    endTime = self.sum(since, limit * duration * 1000 - 1)
+            #    now = self.milliseconds()
+            #    request['endTime'] = min(now, endTime)
         method = 'publicGetKlines'
         if market['future']:
             method = 'fapiPublicGetKlines'
