@@ -1478,7 +1478,7 @@ class binance(Exchange):
                 endTime = self.sum(since, limit * duration * 1000 - 1)
                 now = self.milliseconds()
                 days_between = min(now, endTime) - since
-                if days_between <= 17280000000 - 1 # 200 gün
+                if days_between <= 17280000000 - 1: # 200 gün
                     request['endTime'] = min(now, endTime)
         method = 'publicGetKlines'
         if market['future']:
